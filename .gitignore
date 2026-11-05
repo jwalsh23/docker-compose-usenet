@@ -1,3 +1,4 @@
 acme.json
 .env
 docker-compose.override.yml
+pwd.txt

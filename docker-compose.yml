@@ -1,150 +1,98 @@
-version: '3'
-services:
-  watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - PGID
-      - PUID
-      - TZ
-    command: --schedule "0 0 6 * * *" --label-enable --cleanup
-    restart: unless-stopped
+version: '3.8'
 
+services:
   sabnzbd:
-    image: linuxserver/sabnzbd:latest
+    image: lscr.io/linuxserver/sabnzbd:latest
     container_name: sabnzbd
     hostname: sabnzbd
     ports:
       - "8080:8080"
     volumes:
       - ${CONFIG}/sabnzbd:/config
-      - ${DOWNLOAD}/complete:/downloads
-      - ${DOWNLOAD}/incomplete:/incomplete-downloads
-      - ${DOWNLOAD}/watch:/watch
+      - ${CURRENTDRIVE}/Downloads:/downloads
+      - ${CURRENTDRIVE}/watch:/watch
     environment:
-      - PGID
-      - PUID
-      - TZ
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
     restart: unless-stopped
 
   jackett:
-    image: ghcr.io/linuxserver/jackett
+    image: lscr.io/linuxserver/jackett:latest
     container_name: jackett
-    environment:
-      - PUID
-      - PGID
-      - TZ
+    ports:
+      - "9117:9117"
     volumes:
       - ${CONFIG}/jackett:/config
-      - ${DOWNLOAD}:/downloads
-    ports:
-      - 9117:9117
+      - ${CURRENTDRIVE}/Downloads:/downloads
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
     restart: unless-stopped
 
   deluge:
-    image: ghcr.io/linuxserver/deluge
+    image: lscr.io/linuxserver/deluge:latest
     container_name: deluge
     ports:
       - "8112:8112"
-    environment:
-      - PUID
-      - PGID
-      - TZ
-      - DELUGE_LOGLEVEL=error #optional
     volumes:
       - ${CONFIG}/deluge:/config
-      - ${DOWNLOAD}/complete:/downloads
-      - ${DOWNLOAD}/incomplete:/incomplete-downloads
+      - ${CURRENTDRIVE}/Downloads:/downloads
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+      - DELUGE_LOGLEVEL=error
     restart: unless-stopped
 
   sonarr:
-    image: linuxserver/sonarr:latest
+    image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     hostname: sonarr
     ports:
       - "8989:8989"
     volumes:
       - ${CONFIG}/sonarr:/config
-      - ${DOWNLOAD}/complete:/downloads
-      - ${DATA}/tv:/tv
-      - ${DATA}/anime:/anime
+      - ${CURRENTDRIVE}:/data
+      - ${OLDPLEXDRIVE}:/old_data
     environment:
-      - PGID
-      - PUID
-      - TZ
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
     restart: unless-stopped
 
   radarr:
-    image: linuxserver/radarr:latest
+    image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     hostname: radarr
     ports:
       - "7878:7878"
     volumes:
       - ${CONFIG}/radarr:/config
-      - ${DOWNLOAD}/complete:/downloads
-      - ${DATA}/movies:/movies
+      - ${CURRENTDRIVE}:/data
+      - ${OLDPLEXDRIVE}:/old_data
     environment:
-      - PGID
-      - PUID
-      - TZ
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
     restart: unless-stopped
 
   plex:
-    image: linuxserver/plex
+    image: lscr.io/linuxserver/plex:latest
     container_name: plex
     hostname: plex
-    ports:
-      - 32400:32400/tcp
-      - 3005:3005/tcp
-      - 8324:8324/tcp
-      - 32469:32469/tcp
-      - 1900:1900/udp
-      - 32410:32410/udp
-      - 32412:32412/udp
-      - 32413:32413/udp
-      - 32414:32414/udp
+    network_mode: host
     volumes:
       - ${CONFIG}/plex:/config
       - ${CONFIG}/plextranscode:/transcode
-      - ${DATA}/tv:/media/tv
-      - ${DATA}/movies:/media/movies
-      - ${OLDPLEXDRIVE}/TV:/old/media/tv
-      - ${OLDPLEXDRIVE}/Movies:/old/media/movies
+      - ${CURRENTDRIVE}:/data
+      - ${OLDPLEXDRIVE}:/old_data
     environment:
-      - PGID
-      - PUID
-      - TZ
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
       - VERSION=latest
-      - ADVERTISE_IP=http://192.168.68.73:32400/
-      - PLEX_CLAIM=claim-44L8jChtRUAbHV7jx5i3
-    restart: unless-stopped
-
-  plexpy:
-    image: linuxserver/tautulli:latest
-    container_name: tautulli
-    hostname: plexpy
-    ports:
-      - "8181:8181"
-    volumes:
-      - ${CONFIG}/plexpy:/config
-      - ${CONFIG}/plex/Library/Application Support/Plex Media Server/Logs:/logs:ro
-    environment:
-      - PGID
-      - PUID
-      - TZ
-    restart: unless-stopped
-
-  heimdall:
-    image: ghcr.io/linuxserver/heimdall:latest
-    container_name: heimdall
-    hostname: heimdall
-    volumes:
-      - ${CONFIG}/heimdall:/config
-    environment:
-      - PGID
-      - PUID
-      - TZ
+      - ADVERTISE_IP=${ADVERTISE_IP}
+      - PLEX_CLAIM=${PLEX_CLAIM}
     restart: unless-stopped
